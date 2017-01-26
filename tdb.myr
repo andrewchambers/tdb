@@ -1,4 +1,5 @@
 use std
+use regex
 
 use "libtdb"
 
@@ -13,21 +14,29 @@ const __init__ = {
 
 const usage = {name
 	std.fput(std.Err, "list items from database:\n")
-	std.fput(std.Err, "{} list [METAKEY1:REGEX1 [... METAKEYN:REGEXN]] [-s REGEX]\n", name)
+	std.fput(std.Err, "{} list [METAKEY1:REGEX1 [... METAKEYN:REGEXN]]\n", name)
 	std.fput(std.Err, "\n")
 	std.exit(1)
 }
 
-const add = {args
-
-}
-
-const del = {args
-
-}
-
 const list = {args
-	var dir
+	var dir, patterns
+	
+	patterns = [][:]
+	
+	for arg in args[1:]
+		match std.strfind(arg, ":")
+		| `std.Some sz:
+			match regex.compile(arg[sz+1:])
+			| `std.Ok r:
+				std.slpush(&patterns, (std.sldup(arg[:sz]), r))
+			| `std.Err e:
+				std.fatal("error compiling regex '{}': {}\n", arg[sz+1:], e)
+			;;
+		| `std.None:
+			std.fatal("bad metadata pattern arg '{}'\n", arg)
+		;;
+	;;
 	
 	match std.diropen(tdbpath)
 	| `std.Ok d:
@@ -54,14 +63,32 @@ const list = {args
 				std.fatal("error parsing {}:{} - {}\n", path, lineno, msg)
 			;;
 			
+			for (metapat, pat) in patterns
+				for (metakey, metaval) in metatab
+					if std.sleq(metapat, metakey)
+						match regex.exec(pat, metaval)
+						| `std.Some _:
+							std.put("{} matched\n", name)
+						| `std.None:
+						;;
+					;;
+				;;
+			;;
+			
 			std.slfree(path)
 			freetdbmeta(metatab)
 		| `std.None:
 			break
 		;;
 	;;
-	
 	std.dirclose(dir)
+	
+	for (metapat, pat) in patterns
+		std.slfree(metapat)
+		regex.free(pat)
+	;;
+	
+	std.slfree(patterns)
 }
 
 const main = {args : byte[:][:]
@@ -70,8 +97,6 @@ const main = {args : byte[:][:]
 	;;
 	
 	match args[1]
-	| "add": add(args[1:])
-	| "del": del(args[1:])
 	| "list": list(args[1:])
 	| _: usage(args[0])
 	;;
