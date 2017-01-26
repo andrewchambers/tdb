@@ -2,6 +2,7 @@ use std
 
 pkg libtdb =
 	const newid : (-> byte[40])
+	const readtdbmeta : (path : byte[:] -> std.result(std.htab(byte[:], byte[:])#, (int, byte[:])))
 ;;
 
 const newid = {
@@ -11,4 +12,12 @@ const newid = {
 	std.randbytes(bytes[:])
 	std.bfmt(id[:], "{r}", id)
 	-> id
+}
+
+const readtdbmeta = {path
+	var metadata
+	
+	metadata = std.mkht(std.slhash, std.sleq)
+	
+	-> `std.Ok metadata
 }

@@ -12,7 +12,13 @@ const __init__ = {
 }
 
 const usage = {name
-	std.fput(std.Err, "{} add|del|list|check\n", name)
+	std.fput(std.Err, "add items to database database:\n")
+	std.fput(std.Err, "{} add [-f INPUT] METAKEY:METAVALUE ...\n", name)
+	std.fput(std.Err, "list items from database:\n")
+	std.fput(std.Err, "{} list [METAKEY1:REGEX1 [... METAKEYN:REGEXN]] [-s REGEX]\n", name)
+	std.fput(std.Err, "delete items from database:\n")
+	std.fput(std.Err, "{} del ITEM\n", name)
+	std.fput(std.Err, "{} del [METAKEY1:REGEX1 [... METAKEYN:REGEXN]] [-s REGEX]\n", name)
 	std.exit(1)
 }
 
@@ -24,6 +30,45 @@ const del = {args
 
 }
 
+const list = {args
+	var dir
+	
+	match std.diropen(tdbpath)
+	| `std.Ok d:
+		dir = d
+	| `std.Err err:
+		std.fatal("error traversing {}: {}", tdbpath, err)
+	;;
+	
+	while true
+		match std.dirread(dir)
+		| `std.Some name:
+			var path, metatab
+			
+			if !std.hassuffix(name, ".txt")
+				continue
+			;;
+			
+			path = std.pathcat(tdbpath, name)
+			
+			std.put("listing: {}\n", path)
+			
+			match readtdbmeta(path)
+			| `std.Ok m:
+				metatab = m
+			| `std.Fail (lineno, msg):
+				std.fatal("error parsing {}:{} - {}\n", path, lineno, msg)
+			;;
+			
+			std.htfree(metatab)
+		| `std.None:
+			break
+		;;
+	;;
+	
+	std.dirclose(dir)
+}
+
 const main = {args : byte[:][:]
 	if args.len == 1
 		usage(args[0])
@@ -32,6 +77,7 @@ const main = {args : byte[:][:]
 	match args[1]
 	| "add": add(args[1:])
 	| "del": del(args[1:])
+	| "list": list(args[1:])
 	| _: usage(args[0])
 	;;
 }
