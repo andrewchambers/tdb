@@ -3,3 +3,5 @@ myrddin doc bug: std.randbytes not secure.
 myrddin doc bug: crypto.rand docs.
 myrddin doc bug: std.dirread type sig inconsistent. 
 myrddin doc bug: std.dirread doesn't tell you if you need to free it
+myrddin doc bug: std.result still refers to `Fail instead of Err
+myrddin doc bug: formatting in regex docs is wonky.

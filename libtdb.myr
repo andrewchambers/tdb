@@ -1,8 +1,10 @@
 use std
+use bio
 
-pkg libtdb =
+pkg =
 	const newid : (-> byte[40])
-	const readtdbmeta : (path : byte[:] -> std.result(std.htab(byte[:], byte[:])#, (int, byte[:])))
+	const readtdbmeta : (path : byte[:] -> std.result((byte[:], byte[:])[:], (int, byte[:])))
+	const freetdbmeta : (metadata : (byte[:], byte[:])[:] -> void)
 ;;
 
 const newid = {
@@ -15,9 +17,60 @@ const newid = {
 }
 
 const readtdbmeta = {path
-	var metadata
+	var metadata, file, parseerr
+	var errlineno = 1
 	
-	metadata = std.mkht(std.slhash, std.sleq)
+	metadata = [][:]
 	
+	match bio.open(path, bio.Rd)
+	| `std.Ok f:
+		file = f
+	| `std.Err err:
+		parseerr = (errlineno, err)
+		goto err1
+	;;
+	
+	while true
+		match bio.readln(file)
+		| `bio.Ok "":
+			break
+		| `bio.Eof:
+			break
+		| `bio.Ok ln:
+			match std.strfind(ln, ":")
+			| `std.Some sz:
+				std.slfree(ln)
+				std.slpush(&metadata, (std.sldup(ln[:sz]), std.sldup(ln[sz+1:])))
+			| `std.None:
+				std.slfree(ln)
+				parseerr = (errlineno, "corrupt metadata entry")
+				goto err2
+			;;
+		| _:
+			parseerr = (errlineno, "error reading line")
+			goto err2
+		;;
+		
+		errlineno += 1
+	;;
+	
+	bio.free(file)
 	-> `std.Ok metadata
+	
+	:err2
+	bio.free(file)
+	
+	:err1
+	freetdbmeta(metadata)
+	-> `std.Err parseerr
+}
+
+const freetdbmeta = {meta
+	
+	for (k, v) in meta
+		std.slfree(k)
+		std.slfree(v)
+	;;
+	
+	std.slfree(meta)
 }

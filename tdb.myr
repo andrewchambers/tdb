@@ -12,13 +12,9 @@ const __init__ = {
 }
 
 const usage = {name
-	std.fput(std.Err, "add items to database database:\n")
-	std.fput(std.Err, "{} add [-f INPUT] METAKEY:METAVALUE ...\n", name)
 	std.fput(std.Err, "list items from database:\n")
 	std.fput(std.Err, "{} list [METAKEY1:REGEX1 [... METAKEYN:REGEXN]] [-s REGEX]\n", name)
-	std.fput(std.Err, "delete items from database:\n")
-	std.fput(std.Err, "{} del ITEM\n", name)
-	std.fput(std.Err, "{} del [METAKEY1:REGEX1 [... METAKEYN:REGEXN]] [-s REGEX]\n", name)
+	std.fput(std.Err, "\n")
 	std.exit(1)
 }
 
@@ -51,16 +47,15 @@ const list = {args
 			
 			path = std.pathcat(tdbpath, name)
 			
-			std.put("listing: {}\n", path)
-			
 			match readtdbmeta(path)
 			| `std.Ok m:
 				metatab = m
-			| `std.Fail (lineno, msg):
+			| `std.Err (lineno, msg):
 				std.fatal("error parsing {}:{} - {}\n", path, lineno, msg)
 			;;
 			
-			std.htfree(metatab)
+			std.slfree(path)
+			freetdbmeta(metatab)
 		| `std.None:
 			break
 		;;
