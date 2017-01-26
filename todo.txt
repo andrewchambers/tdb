@@ -1,0 +1,3 @@
+myrddin doc bug: std.randbytes returns void, not size.
+myrddin doc bug: std.randbytes not secure.
+myrddin doc bug: crypto.rand docs.

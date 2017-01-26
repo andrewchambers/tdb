@@ -1,0 +1,37 @@
+use std
+
+use "libtdb"
+
+var tdbpath : byte[:]
+
+const __init__ = {
+	match std.getenv("TDBPATH")
+	| `std.Some e: tdbpath = e
+	| `std.None: std.fatal("TDBPATH not set\n")
+	;;
+}
+
+const usage = {name
+	std.fput(std.Err, "{} add|del|list|check\n", name)
+	std.exit(1)
+}
+
+const add = {args
+
+}
+
+const del = {args
+
+}
+
+const main = {args : byte[:][:]
+	if args.len == 1
+		usage(args[0])
+	;;
+	
+	match args[1]
+	| "add": add(args[1:])
+	| "del": del(args[1:])
+	| _: usage(args[0])
+	;;
+}

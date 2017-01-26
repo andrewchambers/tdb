@@ -1,0 +1,14 @@
+use std
+
+pkg libtdb =
+	const newid : (-> byte[40])
+;;
+
+const newid = {
+	var bytes : byte[32]
+	var id : byte[40]
+	
+	std.randbytes(bytes[:])
+	std.bfmt(id[:], "{r}", id)
+	-> id
+}
